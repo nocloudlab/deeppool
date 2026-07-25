@@ -10,6 +10,8 @@ ranges from 1 hour to 12 months. Light and dark themes. A `/api/health`
 endpoint (200 fresh / 503 stalled, plus the running version) is provided
 for uptime monitors.
 
+![DeepPool dashboard — pool cards and live I/O charts](docs/deeppool-hero.png)
+
 Flask backend that shells out to `zpool`/`zfs`/`smartctl`, plain HTML/JS
 frontend with Chart.js, and a small SQLite database (stdlib, no separate
 service) for history. No auth — put it behind a reverse proxy or keep it
@@ -103,6 +105,53 @@ rm /etc/systemd/system/zfs-monitor.service
 systemctl daemon-reload
 rm -rf /opt/zfs-monitor     # includes history.db — back it up first if you care
 ```
+
+## Screenshots
+
+<details>
+<summary>Historical performance — 1h to 12m, bucketed server-side</summary>
+
+Capacity over time plus per-pool throughput and IOPS. Every range is
+aggregated into roughly 500 points server-side, so a 12-month view isn't
+shipping half a million rows to the browser.
+
+![Historical performance charts with the range picker](docs/deeppool-hist.png)
+
+</details>
+
+<details>
+<summary>ARC hit ratio and per-disk temperature trends</summary>
+
+Disk temperature is tracked per drive from the hourly SMART poll, so the
+daily thermal cycle of each disk is visible over the retention window.
+
+![ARC hit ratio and disk temperature history](docs/deeppool-disktemp.png)
+
+</details>
+
+<details>
+<summary>Scrub / resilver status and SMART health table</summary>
+
+The vdev tree with per-device read/write/checksum error counts, above the
+SMART summary table. NVMe drives report wear, media errors and lifetime
+writes; ATA drives report reallocated sectors — each shows "—" for the
+other's columns, which is expected rather than missing data.
+
+![Scrub status vdev tree and SMART health table](docs/deeppool-resilver.png)
+
+</details>
+
+<details>
+<summary>Per-drive S.M.A.R.T. detail panel with CSV export</summary>
+
+The complete attribute set for one drive, keyed the way the underlying
+standard keys it — NVMe by SMART/Health log byte offset, ATA by attribute
+ID. Each row carries a Critical / Fair / Good dot (note Unsafe Shutdowns
+flagged amber here), and **Export CSV** downloads the table as shown.
+
+![Per-drive SMART attribute panel](docs/deeppool-smart.png)
+
+</details>
 
 ## Known trade-offs
 
