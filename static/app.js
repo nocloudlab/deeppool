@@ -749,7 +749,7 @@ function alignSeries(axis, timestamps, values) {
 
 // Plain kernel device names (sda1, nvme0n1p2, ...) are already short
 // and physically meaningful — used as-is. by-id names (e.g.
-// "nvme-CT1000T500SSD8_25395334B282") carry a serial that isn't
+// "nvme-CT1000T500SSD8_0000000000A1") carry a serial that isn't
 // meaningful to a human, and truncating it to a handful of characters
 // (the old behaviour) just reads as clipped, cut-off text — especially
 // when two disks of the same model differ only in that tail. Use a

@@ -119,9 +119,9 @@ test("device labeler numbers by bus type, not array position", () => {
   const labelFor = app.makeDeviceLabeler();
   // Interleaved buses: a purely positional index would produce
   // "NVMe 1", "Disk 2", "NVMe 3" — wrong on both counts.
-  assert.strictEqual(labelFor("nvme-CT1000T500SSD8_25395334B282"), "NVMe 1");
+  assert.strictEqual(labelFor("nvme-CT1000T500SSD8_0000000000A1"), "NVMe 1");
   assert.strictEqual(labelFor("ata-ST8000VN004_ZR10ABCD"), "Disk 1");
-  assert.strictEqual(labelFor("nvme-CT1000T500SSD8_25395337E3C7"), "NVMe 2");
+  assert.strictEqual(labelFor("nvme-CT1000T500SSD8_0000000000B2"), "NVMe 2");
   assert.strictEqual(labelFor("ata-ST8000VN004_ZR10EFGH"), "Disk 2");
 });
 
