@@ -72,14 +72,31 @@ derivatives haven't had the same soak time.
 
 ## Install
 
+Run on the host that has the ZFS pool, as root.
+
+From a clone:
+
 ```bash
 git clone https://github.com/nocloudlab/deeppool.git
 cd deeppool
 ./install.sh
 ```
 
-Then open `http://<host-ip>:8087`. Full instructions, upgrade and
-uninstall steps are in the README.
+Or from the source tarball attached below — it extracts to a directory
+named after the tag:
+
+```bash
+tar xzf deeppool-1.0.0-rc.1.tar.gz
+cd deeppool-1.0.0-rc.1
+./install.sh
+```
+
+If you take the **.zip** instead, that format doesn't carry Unix
+permissions, so run `bash install.sh` (or `chmod +x install.sh` first).
+
+Then open `http://<host-ip>:8087`. Re-running `install.sh` upgrades in
+place and preserves your history database. Full instructions, upgrade
+and uninstall steps are in the README.
 
 ## Feedback wanted
 
