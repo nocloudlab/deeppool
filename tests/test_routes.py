@@ -142,12 +142,37 @@ def test_history_empty_db_returns_empty_structures(client, temp_db):
 
 
 def test_history_returns_per_pool_series(client, temp_db):
+    """Samples spaced wider than the bucket width stay distinct points.
+
+    Spacing matters: /api/history aggregates into ~500 buckets across the
+    requested range, so a 24h bucket is ~172s. Samples closer together
+    than that are averaged into one point by design (see
+    test_history_averages_samples_within_a_bucket), so a test wanting N
+    points must space them beyond the bucket width rather than assume
+    one row equals one point."""
     now = int(time.time())
+    bucket = appmod._bucket_seconds(appmod.HISTORY_RANGES["24h"])
     for i in range(3):
-        _insert_pool_sample(temp_db, now - i * 60, "tank", 40 + i)
+        _insert_pool_sample(temp_db, now - i * bucket * 3, "tank", 40 + i)
     data = client.get("/api/history?range=24h").get_json()
     assert "tank" in data["pools"]
     assert len(data["pools"]["tank"]["timestamps"]) == 3
+
+
+def test_history_averages_samples_within_a_bucket(client, temp_db):
+    """The flip side, and the reason the bug above was possible: several
+    samples inside one bucket collapse to a single averaged point. This
+    is what keeps a 12-month view at ~500 points instead of ~500,000."""
+    # Anchored to the start of a bucket, not "now" — three samples 20s
+    # apart around an arbitrary instant could straddle a boundary and
+    # produce two points, making the test pass or fail by wall clock.
+    bucket = appmod._bucket_seconds(appmod.HISTORY_RANGES["24h"])
+    base = (int(time.time()) // bucket) * bucket
+    for i, cap in enumerate((30, 40, 50)):
+        _insert_pool_sample(temp_db, base + i * 5, "tank", cap)
+    series = client.get("/api/history?range=24h").get_json()["pools"]["tank"]
+    assert len(series["timestamps"]) == 1
+    assert series["capacity_pct"][0] == pytest.approx(40.0)
 
 
 def test_history_pools_with_different_depths_keep_own_timestamps(client, temp_db):
@@ -156,11 +181,13 @@ def test_history_pools_with_different_depths_keep_own_timestamps(client, temp_db
     series with its own timestamps (the frontend aligns them onto a
     shared axis) rather than implying a shared timeline."""
     now = int(time.time())
+    # A day apart: comfortably wider than the 30d bucket (~86 min), so
+    # each sample is its own point wherever the boundaries fall.
     for i in range(5):
-        _insert_pool_sample(temp_db, now - i * 3600, "old_pool", 50)
+        _insert_pool_sample(temp_db, now - i * 86400, "old_pool", 50)
     # New pool only exists for the two most recent buckets.
     for i in range(2):
-        _insert_pool_sample(temp_db, now - i * 3600, "new_pool", 10)
+        _insert_pool_sample(temp_db, now - i * 86400, "new_pool", 10)
 
     data = client.get("/api/history?range=30d").get_json()
     old_ts = data["pools"]["old_pool"]["timestamps"]
@@ -179,7 +206,7 @@ def test_history_devices_with_different_depths(client, temp_db):
     replaced drive has no samples before its swap-in date."""
     now = int(time.time())
     for i in range(4):
-        _insert_smart_sample(temp_db, now - i * 3600, "/dev/sda", 35)
+        _insert_smart_sample(temp_db, now - i * 86400, "/dev/sda", 35)
     _insert_smart_sample(temp_db, now, "/dev/sdb", 40)
 
     data = client.get("/api/history?range=30d").get_json()
