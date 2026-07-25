@@ -1,0 +1,17 @@
+81ffafe13c37e1b25793b020d446f4d9739b949dadb7f9f79d709a0cad781c2f
+# SHA-256 pin for static/vendor/chart.umd.min.js
+# Chart.js 4.4.1, from
+# https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js
+#
+# install.sh verifies the downloaded file against the hash above and
+# refuses to install it on mismatch. It also re-verifies an
+# already-installed copy on every run, so tampering with the vendored
+# file surfaces at the next upgrade rather than persisting silently.
+#
+# To re-pin (e.g. when bumping the Chart.js version), download the file
+# from a source you trust, verify it however you normally would, then:
+#
+#   sha256sum chart.umd.min.js | awk '{print $1}' > chartjs.sha256
+#
+# The hash must be a 64-character hex string at the start of a line;
+# lines beginning with # are ignored.

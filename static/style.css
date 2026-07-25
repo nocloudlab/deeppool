@@ -1,0 +1,695 @@
+/* Dark is the default theme. app.js always sets data-theme on <html>
+   (from the saved preference, else the OS setting), so the light block
+   below is a straight override — every themeable value lives here as a
+   variable rather than being hardcoded at the point of use. */
+:root {
+  --bg: #12151a;
+  --panel: #1b1f27;
+  --border: #2a2f3a;
+  --text: #e6e9ef;
+  --muted: #8b93a3;
+  --good: #3ecf8e;
+  --warn: #e0a63c;
+  --bad: #e05c5c;
+  --accent: #4f8cff;
+  --violet: #a685e2;
+
+  /* Tinted backgrounds for badges and the active range button. */
+  --good-bg: rgba(62, 207, 142, 0.15);
+  --warn-bg: rgba(224, 166, 60, 0.15);
+  --bad-bg: rgba(224, 92, 92, 0.15);
+  --accent-bg: rgba(79, 140, 255, 0.15);
+  --accent-glow: rgba(79, 140, 255, 0.08);
+  --logo-glow: rgba(79, 140, 255, 0.25);
+
+  /* Capacity bar trough — must sit *behind* the fill, so it's darker
+     than the card in dark mode and lighter than it in light mode. */
+  --bar-track: #0d0f13;
+  --backdrop: rgba(0, 0, 0, 0.6);
+
+  /* Brand marks — deliberately NOT overridden by the light theme. The
+     logo keeps its dark plate and its original blue/green in both
+     themes so the identity stays constant. This is safe because the
+     plate is its own background: the brand colours sit on #12151a
+     regardless of the page behind it (5.7:1 and 9.2:1), so nothing
+     depends on the page being dark. */
+  --brand-plate: #12151a;
+  --brand-track: #2a2f3a;
+  --brand-arc: #4f8cff;
+  --brand-dot: #3ecf8e;
+
+  /* Chart.js can't read CSS variables itself; app.js reads these at
+     render time and re-reads them when the theme changes. */
+  --chart-grid: #2a2f3a;
+  --chart-tick: #8b93a3;
+  --chart-label: #e6e9ef;
+  /* Heights of the two sticky bars — referenced by the anchor
+     scroll-margin so jump links land below them rather than under them.
+     app.js measures the real rendered heights on load and overrides
+     these, so they only need to be close. */
+  --header-h: 73px;
+  --nav-h: 39px;
+}
+
+/* Light theme. The status hues are darkened relative to the dark theme:
+   the dark palette's greens/ambers are tuned for contrast against a
+   near-black card and fail WCAG AA as text on white, so they're not
+   simply reused. */
+:root[data-theme="light"] {
+  --bg: #f4f6f9;
+  --panel: #ffffff;
+  --border: #dde2ea;
+  --text: #171b22;
+  --muted: #5c6675;
+  --good: #12855a;
+  --warn: #a06510;
+  --bad: #c0392f;
+  --accent: #1f5fd0;
+  --violet: #6d4fbf;
+
+  --good-bg: rgba(18, 133, 90, 0.12);
+  --warn-bg: rgba(160, 101, 16, 0.13);
+  --bad-bg: rgba(192, 57, 47, 0.11);
+  --accent-bg: rgba(31, 95, 208, 0.11);
+  --accent-glow: rgba(31, 95, 208, 0.07);
+  --logo-glow: rgba(31, 95, 208, 0.18);
+
+  --bar-track: #e7ebf1;
+  --backdrop: rgba(23, 27, 34, 0.45);
+  /* --brand-* deliberately absent: the logo keeps its dark-theme
+     colours here so the branding is identical in both themes. */
+
+  --chart-grid: #e4e8ee;
+  --chart-tick: #5c6675;
+  --chart-label: #171b22;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Respect a user's reduced-motion preference — smooth scrolling over a
+   long page is exactly the kind of motion that setting exists for. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background:
+    radial-gradient(ellipse 600px 120px at 20% 0%, var(--accent-glow), transparent),
+    linear-gradient(180deg, var(--panel), var(--bg));
+  position: sticky;
+  top: 0;
+  /* Below the S.M.A.R.T. modal (z-index 100) so the overlay still covers
+     the header, but above page content. */
+  z-index: 50;
+}
+
+#section-nav {
+  position: sticky;
+  /* Sits directly beneath the sticky header. */
+  top: var(--header-h);
+  z-index: 49;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 24px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  /* Narrow screens: scroll the links rather than wrapping into a tall
+     block that eats the viewport. */
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+#section-nav a {
+  flex-shrink: 0;
+  padding: 10px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+
+#section-nav a:hover { color: var(--text); }
+
+#section-nav a.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* Sub-items belong to Historical Performance, not to the top level. */
+#section-nav a.nav-sub {
+  font-weight: 500;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+#section-nav a.nav-sub::before {
+  content: "└ ";
+  opacity: 0.5;
+}
+
+/* Anchor targets must clear the sticky header + nav, or a jump lands
+   with the heading hidden underneath them. */
+section[id],
+.pool-chart-label[id] {
+  scroll-margin-top: calc(var(--header-h) + var(--nav-h) + 12px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-logo {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 10px var(--logo-glow));
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.wordmark {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  background: linear-gradient(90deg, var(--accent), var(--good));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand-tagline {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--muted);
+}
+
+#last-updated {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Collector-stalled / fetch-failed state on the header timestamp. */
+#last-updated.stale-warning {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.theme-toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Logo mark: fixed brand colours in both themes (see --brand-* above).
+   It does not follow the theme — that's the point. */
+.logo-plate { fill: var(--brand-plate); stroke: var(--brand-track); }
+.logo-track { stroke: var(--brand-track); }
+.logo-arc   { stroke: var(--brand-arc); }
+.logo-dot   { fill: var(--brand-dot); }
+
+main {
+  padding: 20px 24px 60px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+section {
+  margin-bottom: 32px;
+}
+
+h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Gradient accent bar in front of every section heading */
+h2::before {
+  content: "";
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--accent), var(--good));
+  flex-shrink: 0;
+}
+
+/* Per-section accent colors so each section is scannable at a glance */
+#iostat-section h2::before  { background: linear-gradient(180deg, var(--accent), var(--violet)); }
+#history-section h2::before { background: linear-gradient(180deg, var(--violet), var(--accent)); }
+#arc-section h2::before     { background: linear-gradient(180deg, var(--good), var(--accent)); }
+#scrub-section h2::before   { background: linear-gradient(180deg, var(--warn), var(--good)); }
+#smart-section h2::before   { background: linear-gradient(180deg, var(--good), var(--warn)); }
+
+.section-subnote {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.card .title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.topology-label {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 10px;
+  margin-top: -4px;
+}
+
+.badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.more-info-btn {
+  margin-top: 12px;
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.more-info-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.pool-disks {
+  margin-top: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.disk-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 5px 0;
+}
+
+.disk-row + .disk-row {
+  border-top: 1px solid var(--border);
+}
+
+.disk-name {
+  font-weight: 600;
+  color: var(--text);
+  min-width: 55px;
+  white-space: nowrap;
+  border-bottom: 1px dotted var(--border);
+  cursor: help;
+}
+
+.disk-row-empty {
+  font-style: italic;
+}
+
+.badge.ONLINE, .badge.PASSED { background: var(--good-bg); color: var(--good); }
+.badge.DEGRADED, .badge.unknown { background: var(--warn-bg); color: var(--warn); }
+.badge.FAULTED, .badge.OFFLINE, .badge.FAILED, .badge.UNAVAIL { background: var(--bad-bg); color: var(--bad); }
+
+.bar-bg {
+  background: var(--bar-track);
+  border-radius: 6px;
+  height: 10px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.bar-fill {
+  height: 100%;
+  background: var(--good);
+  transition: width 0.4s ease;
+}
+
+.bar-fill.warn { background: var(--warn); }
+.bar-fill.bad { background: var(--bad); }
+
+.value-good { color: var(--good); font-weight: 600; }
+.value-warn { color: var(--warn); font-weight: 600; }
+.value-bad { color: var(--bad); font-weight: 600; }
+
+.stat-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.pool-chart-group {
+  margin-bottom: 20px;
+}
+
+.pool-chart-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.chart-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  height: 220px;
+}
+
+.chart-card-wide {
+  height: 220px;
+  margin-bottom: 20px;
+}
+
+.chart-card-tall {
+  height: 320px;
+}
+
+.range-picker {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.range-picker button {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.range-picker button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.range-picker button.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+#scrub-list .card {
+  margin-bottom: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th, td {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+.device-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: help;
+  width: max-content;
+}
+
+.device-label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.device-model {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* --- S.M.A.R.T. detail panel ---------------------------------------- */
+
+.smart-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.smart-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
+}
+
+.modal-backdrop[hidden] { display: none; }
+
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 860px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.modal-subtitle {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.modal-close:hover { color: var(--text); }
+
+.modal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.status-legend {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.status-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-good { background: var(--accent); }
+.dot-fair { background: var(--warn); }
+.dot-critical { background: var(--bad); }
+
+.export-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.export-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* The table scrolls inside the dialog so the header and legend stay put
+   on a drive reporting a long attribute list. */
+.modal-body {
+  overflow-y: auto;
+  padding: 0 20px 20px;
+}
+
+.modal-body table {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.modal-body th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 1;
+}
+
+.modal-body td {
+  font-variant-numeric: tabular-nums;
+}
+
+tr:last-child td { border-bottom: none; }
+
+@media (max-width: 700px) {
+  .charts-row { grid-template-columns: 1fr; }
+}

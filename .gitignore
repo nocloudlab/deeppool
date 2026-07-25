@@ -1,0 +1,17 @@
+# Runtime data — created by the app, never part of the source
+history.db
+history.db-wal
+history.db-shm
+static/vendor/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# OS / editor cruft
+.DS_Store
+*.swp
+.vscode/
+.idea/

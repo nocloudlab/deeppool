@@ -1,0 +1,16 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- background -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#12151a" stroke="#2a2f3a" stroke-width="2"/>
+
+  <!-- capacity ring: track -->
+  <circle cx="32" cy="32" r="20" fill="none" stroke="#2a2f3a" stroke-width="7"/>
+
+  <!-- capacity ring: filled arc (~70%), matches the pool capacity bars in the dashboard -->
+  <circle cx="32" cy="32" r="20" fill="none" stroke="#4f8cff" stroke-width="7"
+          stroke-linecap="round"
+          stroke-dasharray="88 125.6"
+          transform="rotate(-90 32 32)"/>
+
+  <!-- center dot: "online" status -->
+  <circle cx="32" cy="32" r="7" fill="#3ecf8e"/>
+</svg>

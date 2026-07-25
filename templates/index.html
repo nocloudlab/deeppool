@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeepPool · ZFS Monitor</title>
+<link rel="icon" href="/static/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16.png">
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+<link rel="stylesheet" href="/static/style.css">
+<script src="/static/vendor/chart.umd.min.js"></script>
+<script>
+  // Applied before first paint so the page never flashes the wrong theme
+  // on load. Deliberately inline and dependency-free — app.js loads at
+  // the end of <body>, far too late to prevent a flash. Kept in sync
+  // with resolveTheme() in app.js.
+  (function () {
+    try {
+      var stored = localStorage.getItem("deeppool-theme");
+      var dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var theme = (stored === "light" || stored === "dark") ? stored : (dark ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    } catch (e) {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  })();
+</script>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <!-- Scaled-up version of the favicon capacity-ring logo -->
+      <!-- Colours come from CSS variables so the logo follows the theme
+           (the .ico/.png favicons can't, but those are browser chrome). -->
+      <svg class="brand-logo" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect class="logo-plate" x="2" y="2" width="60" height="60" rx="14" stroke-width="2"/>
+        <circle class="logo-track" cx="32" cy="32" r="20" fill="none" stroke-width="7"/>
+        <circle class="logo-arc" cx="32" cy="32" r="20" fill="none" stroke-width="7"
+                stroke-linecap="round" stroke-dasharray="88 125.6" transform="rotate(-90 32 32)"/>
+        <circle class="logo-dot" cx="32" cy="32" r="7"/>
+      </svg>
+      <div class="brand-text">
+        <h1 class="wordmark">DeepPool</h1>
+        <span class="brand-tagline">ZFS Monitor</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <button id="theme-toggle" class="theme-toggle" aria-live="polite">Light mode</button>
+      <span id="last-updated">—</span>
+    </div>
+  </header>
+
+  <!-- Section jump-links. The two marked nav-sub live inside Historical
+       Performance rather than being sections of their own. -->
+  <nav id="section-nav" aria-label="Sections">
+    <a href="#pools-section">Pools</a>
+    <a href="#iostat-section">I/O Performance</a>
+    <a href="#history-section">Historical</a>
+    <a href="#history-arc" class="nav-sub">ARC Hit Ratio</a>
+    <a href="#history-temp" class="nav-sub">Disk Temp</a>
+    <a href="#arc-section">ARC Cache</a>
+    <a href="#scrub-section">Scrub / Resilver</a>
+    <a href="#smart-section">SMART Health</a>
+  </nav>
+
+  <main id="app">
+    <section id="pools-section">
+      <h2>Pools</h2>
+      <div id="pools-grid" class="grid"></div>
+    </section>
+
+    <section id="iostat-section">
+      <h2>I/O Performance</h2>
+      <div id="iostat-pools"></div>
+    </section>
+
+    <section id="history-section">
+      <h2>Historical Performance</h2>
+      <div class="range-picker" id="history-range-picker">
+        <button data-range="1h">1h</button>
+        <button data-range="24h" class="active">24h</button>
+        <button data-range="7d">7d</button>
+        <button data-range="30d">30d</button>
+        <button data-range="90d">3m</button>
+        <button data-range="180d">6m</button>
+        <button data-range="365d">12m</button>
+      </div>
+
+      <div class="pool-chart-label">Capacity Over Time</div>
+      <div class="chart-card chart-card-wide"><canvas id="history-capacity-chart"></canvas></div>
+
+      <div id="history-iostat-pools"></div>
+
+      <div class="pool-chart-label" id="history-arc">ARC Hit Ratio</div>
+      <div class="chart-card chart-card-wide"><canvas id="history-arc-chart"></canvas></div>
+
+      <div class="pool-chart-label" id="history-temp">Disk Temperature</div>
+      <div class="chart-card chart-card-wide chart-card-tall"><canvas id="history-temp-chart"></canvas></div>
+    </section>
+
+    <section id="arc-section">
+      <h2>ARC Cache</h2>
+      <div id="arc-grid" class="grid"></div>
+    </section>
+
+    <section id="scrub-section">
+      <h2>Scrub / Resilver Status</h2>
+      <div id="scrub-list"></div>
+    </section>
+
+    <section id="smart-section">
+      <h2>Disk SMART Health <span id="smart-last-updated" class="section-subnote"></span></h2>
+      <table id="smart-table">
+        <thead>
+          <tr><th>Device</th><th>Health</th><th>Temp (°C)</th><th>Power-On Hours</th><th>Reallocated Sectors</th><th>NVMe Wear</th><th>Media Errors</th><th>Total Written</th><th>Detail</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- Per-drive S.M.A.R.T. detail panel. Hidden until a drive's
+       S.M.A.R.T. button is clicked; contents fetched on demand. -->
+  <div id="smart-modal" class="modal-backdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="smart-modal-title">
+      <div class="modal-header">
+        <div>
+          <h3 id="smart-modal-title">S.M.A.R.T.</h3>
+          <div id="smart-modal-subtitle" class="modal-subtitle"></div>
+        </div>
+        <button id="smart-modal-close" class="modal-close" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="modal-toolbar">
+        <div class="status-legend">
+          <span><i class="dot dot-critical"></i>Critical</span>
+          <span><i class="dot dot-fair"></i>Fair</span>
+          <span><i class="dot dot-good"></i>Good</span>
+        </div>
+        <button id="smart-export-btn" class="export-btn">Export CSV</button>
+      </div>
+
+      <div class="modal-body">
+        <table id="smart-detail-table">
+          <thead id="smart-detail-head"></thead>
+          <tbody id="smart-detail-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+[Unit]
+Description=DeepPool (ZFS Monitor Dashboard)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/zfs-monitor
+Environment=ZFS_MONITOR_FAST_INTERVAL=5
+Environment=ZFS_MONITOR_SMART_INTERVAL=3600
+Environment=ZFS_MONITOR_RECORD_INTERVAL=60
+Environment=ZFS_MONITOR_HISTORY_RETENTION_DAYS=365
+# Defaults already match — uncomment only to change them:
+# Environment=ZFS_MONITOR_HOST=0.0.0.0
+# Environment=ZFS_MONITOR_PORT=8087
+ExecStart=/opt/zfs-monitor/venv/bin/python3 /opt/zfs-monitor/app.py
+Restart=on-failure
+RestartSec=3
+User=root
+
+# Sandboxing — as much as is possible for a service that legitimately
+# needs root for smartctl raw device access and zpool queries.
+# ProtectSystem=full leaves /opt writable (history.db lives there) while
+# making /usr, /boot and /etc read-only to the service.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target
