@@ -64,11 +64,20 @@ cd deeppool
 
 ### From a release tarball
 
+Grab the source tarball from the
+[Releases page](https://github.com/nocloudlab/deeppool/releases). GitHub
+names it after the repository and tag, and it extracts to a matching
+directory:
+
 ```bash
-tar xzf zfs-monitor.tar.gz
-cd zfs-monitor
+tar xzf deeppool-1.0.0-rc.1.tar.gz
+cd deeppool-1.0.0-rc.1
 ./install.sh
 ```
+
+If you downloaded the **.zip** rather than the tarball, the zip format
+doesn't carry Unix permissions, so the script won't be executable — run
+`bash install.sh` instead, or `chmod +x install.sh` first.
 
 Either way, `install.sh` is self-contained and idempotent — it copies
 the app files into `/opt/zfs-monitor`, installs `smartmontools` and
